@@ -74,6 +74,32 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.move_ip(-self.speed, 0)
         if self.rect.right < 0:
             self.kill()
+            
+# Define the cloud object by extending pygame.sprite.Sprite
+# Use an image for a better-looking sprite
+class Cloud(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Cloud, self).__init__()
+        self.surf = pygame.image.load("cloud.png").convert()
+        self.surf.set_colorkey((0, 0, 0), RLEACCEL)
+        # The starting position is randomly generated
+        self.rect = self.surf.get_rect(
+            center=(
+                random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
+                random.randint(0, SCREEN_HEIGHT),
+            )
+        )
+
+    # Move the cloud based on a constant speed
+    # Remove the cloud when it passes the left edge of the screen
+    def update(self):
+        self.rect.move_ip(-5, 0)
+        if self.rect.right < 0:
+            self.kill()
+
+
+# Setup for sounds. Defaults are good.
+pygame.mixer.init()
 
 # Initialize pygame
 pygame.init()
@@ -82,9 +108,14 @@ pygame.init()
 # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
+# Setup the clock for a decent framerate
+clock = pygame.time.Clock()
+
 # Create a custom event for adding a new enemy
 ADDENEMY = pygame.USEREVENT + 1
 pygame.time.set_timer(ADDENEMY, 250)
+ADDCLOUD = pygame.USEREVENT + 2
+pygame.time.set_timer(ADDCLOUD, 1000)
 
 # Instantiate player. Right now, this is just a rectangle.
 player = Player()
@@ -93,8 +124,21 @@ player = Player()
 # - enemies is used for collision detection and position updates
 # - all_sprites is used for rendering
 enemies = pygame.sprite.Group()
+clouds = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 all_sprites.add(player)
+
+# Load and play background music
+# Sound source: http://ccmixter.org/files/Apoxode/59262
+# License: https://creativecommons.org/licenses/by/3.0/
+#pygame.mixer.music.load("Apoxode_-_Electric_1.mp3")
+#pygame.mixer.music.play(loops=-1)
+
+# Load all sound files
+# Sound sources: Jon Fincher
+#move_up_sound = pygame.mixer.Sound("Rising_putter.ogg")
+#move_down_sound = pygame.mixer.Sound("Falling_putter.ogg")
+#collision_sound = pygame.mixer.Sound("Collision.ogg")
 
 # Variable to keep the main loop running
 running = True
@@ -119,6 +163,13 @@ while running:
             new_enemy = Enemy()
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
+            
+        # Add a new cloud?
+        elif event.type == ADDCLOUD:
+            # Create the new cloud and add it to sprite groups
+            new_cloud = Cloud()
+            clouds.add(new_cloud)
+            all_sprites.add(new_cloud)
 
     # Get the set of keys pressed and check for user input
     pressed_keys = pygame.key.get_pressed()
@@ -126,9 +177,10 @@ while running:
 
     # Update enemy position
     enemies.update()
+    clouds.update()
 
     # Fill the screen with black
-    screen.fill((0, 0, 0))
+    screen.fill((135, 206, 250))
 
     # Draw all sprites
     for entity in all_sprites:
@@ -142,3 +194,6 @@ while running:
 
     # Update the display
     pygame.display.flip()
+    
+    # Ensure program maintains a rate of 30 frames per second
+    clock.tick(30)
